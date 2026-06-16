@@ -1,0 +1,314 @@
+// Schemat bazy — MVP marketplace (moda)
+// Uwaga: środki użytkowników trzyma operator płatności (Tpay/P24).
+// Tu przechowujemy tylko REFERENCJE do transakcji i payoutów, nie same pieniądze.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- UŻYTKOWNICY ----------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AccountType {
+  PRIVATE
+  BUSINESS
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  role         Role        @default(USER)
+  accountType  AccountType @default(PRIVATE)
+
+  displayName  String
+  avatarUrl    String?
+  bio          String?
+
+  // dane firmowe (tylko BUSINESS)
+  companyName  String?
+  nip          String?
+
+  ratingAvg    Float       @default(0)
+  ratingCount  Int         @default(0)
+  verified     Boolean     @default(false)
+
+  listings        Listing[]
+  ordersAsBuyer   Order[]        @relation("buyer")
+  ordersAsSeller  Order[]        @relation("seller")
+  messages        Message[]
+  reviewsWritten  Review[]       @relation("reviewAuthor")
+  reviewsReceived Review[]       @relation("reviewTarget")
+  favorites       Favorite[]
+  notifications   Notification[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// ---------- KATALOG ----------
+
+model Category {
+  id       String     @id @default(cuid())
+  name     String
+  slug     String     @unique
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  listings Listing[]
+}
+
+enum ListingStatus {
+  ACTIVE
+  RESERVED
+  SOLD
+  ARCHIVED
+}
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  VERY_GOOD
+  GOOD
+}
+
+model Listing {
+  id          String         @id @default(cuid())
+  sellerId    String
+  seller      User           @relation(fields: [sellerId], references: [id])
+
+  title       String
+  description String?
+  price       Int            // w groszach
+  currency    String         @default("PLN")
+
+  brand       String?
+  size        String?
+  color       String?
+  condition   ItemCondition  @default(VERY_GOOD)
+
+  categoryId  String
+  category    Category       @relation(fields: [categoryId], references: [id])
+
+  status      ListingStatus  @default(ACTIVE)
+  verified    Boolean        @default(false) // "Zweryfikowane przez moderatora"
+
+  images      ListingImage[]
+  favorites   Favorite[]
+  orders      Order[]
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([categoryId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+model ListingImage {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  order     Int     @default(0)
+}
+
+model Favorite {
+  userId    String
+  listingId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, listingId])
+}
+
+// ---------- TRANSAKCJE ----------
+
+enum OrderStatus {
+  PENDING      // utworzone, czeka na płatność
+  PAID         // operator potwierdził płatność (środki zablokowane)
+  SHIPPED      // sprzedający wysłał
+  DELIVERED    // dostarczone
+  COMPLETED    // środki zwolnione do sprzedającego
+  CANCELLED
+  REFUNDED
+  DISPUTED
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  listingId      String
+  listing        Listing     @relation(fields: [listingId], references: [id])
+  buyerId        String
+  buyer          User        @relation("buyer", fields: [buyerId], references: [id])
+  sellerId       String
+  seller         User        @relation("seller", fields: [sellerId], references: [id])
+
+  amount         Int         // cena produktu (grosze)
+  commission     Int         @default(0) // prowizja platformy
+  shippingFee    Int         @default(0)
+  status         OrderStatus @default(PENDING)
+
+  shippingMethod String?     // np. paczkomat
+  trackingNumber String?
+
+  payment        Payment?
+  dispute        Dispute?
+  review         Review[]
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+enum PaymentProvider {
+  TPAY
+  P24
+  AUTOPAY
+}
+
+enum PaymentStatus {
+  INITIATED
+  AUTHORIZED   // środki zablokowane u operatora
+  CAPTURED     // pobrane
+  PAID_OUT     // wypłacone sprzedającemu (payout)
+  REFUNDED
+  FAILED
+}
+
+// Referencja do operacji u operatora — NIE trzymamy tu środków.
+model Payment {
+  id             String          @id @default(cuid())
+  orderId        String          @unique
+  order          Order           @relation(fields: [orderId], references: [id])
+
+  provider       PaymentProvider
+  providerTxId   String?         // ID transakcji u operatora
+  providerPayout String?         // ID wypłaty u operatora
+  status         PaymentStatus   @default(INITIATED)
+  amount         Int
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+// ---------- KOMUNIKACJA ----------
+
+model Conversation {
+  id        String    @id @default(cuid())
+  buyerId   String
+  sellerId  String
+  listingId String?
+  messages  Message[]
+  createdAt DateTime  @default(now())
+
+  @@unique([buyerId, sellerId, listingId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+// ---------- OPINIE / ZAUFANIE ----------
+
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  authorId  String
+  author    User     @relation("reviewAuthor", fields: [authorId], references: [id])
+  targetId  String
+  target    User     @relation("reviewTarget", fields: [targetId], references: [id])
+  rating    Int      // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+// ---------- ZWROTY / SPORY ----------
+
+enum DisputeStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+model Dispute {
+  id         String        @id @default(cuid())
+  orderId    String        @unique
+  order      Order         @relation(fields: [orderId], references: [id])
+  openedById String
+  reason     String
+  status     DisputeStatus @default(OPEN)
+  resolution String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+// ---------- POWIADOMIENIA ----------
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // ORDER_PAID, MESSAGE, GROUP_BUY_FILLED, ...
+  payload   Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------- "KUP W ZESPOLE" (szkielet — do doprecyzowania z klientem) ----------
+
+enum GroupBuyStatus {
+  FORMING      // grupa się zbiera
+  FILLED       // próg osiągnięty
+  COMPLETED    // rozliczone
+  EXPIRED      // nie zebrano w czasie -> zwroty
+  CANCELLED
+}
+
+model GroupBuy {
+  id           String                @id @default(cuid())
+  listingId    String
+  threshold    Int                   // ile osób / sztuk uruchamia zakup
+  deadline     DateTime
+  status       GroupBuyStatus        @default(FORMING)
+  participants GroupBuyParticipant[]
+  createdAt    DateTime              @default(now())
+}
+
+model GroupBuyParticipant {
+  id          String   @id @default(cuid())
+  groupBuyId  String
+  groupBuy    GroupBuy @relation(fields: [groupBuyId], references: [id], onDelete: Cascade)
+  userId      String
+  // referencja do płatności u operatora (środki blokowane do czasu zebrania grupy)
+  paymentRef  String?
+  joinedAt    DateTime @default(now())
+
+  @@unique([groupBuyId, userId])
+}
