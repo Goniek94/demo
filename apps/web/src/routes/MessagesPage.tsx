@@ -191,7 +191,7 @@ export function MessagesPage() {
       </div>
 
       {/* ===================== DESKTOP (2-pane) ===================== */}
-      <div className="hidden md:block w-full max-w-[1400px] mx-auto px-4 md:px-8 py-6">
+      <div className="hidden md:block w-full max-w-[1760px] mx-auto px-4 md:px-8 py-6">
         <h1 className="font-serif text-2xl font-semibold text-ink mb-4">Wiadomości</h1>
         <div className="grid grid-cols-[360px_1fr] gap-6 h-[calc(100vh-240px)]">
           {/* lista */}

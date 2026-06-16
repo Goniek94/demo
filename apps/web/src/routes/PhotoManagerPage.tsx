@@ -9,7 +9,7 @@ export function PhotoManagerPage() {
   const gallery = [IMG.trench, IMG.blazer, IMG.dressW, IMG.trench];
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 pb-8">
+    <div className="max-w-[760px] mx-auto px-4 pt-4 md:pt-6 pb-8">
       <div className="flex items-center gap-3 mb-1">
         <button onClick={() => router.back()}><Icon name="arrowLeft" size={20} /></button>
         <h1 className="font-serif text-xl font-semibold text-ink flex-1 text-center pr-6">Zdjęcia produktu</h1>
