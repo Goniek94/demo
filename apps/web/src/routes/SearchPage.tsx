@@ -189,7 +189,10 @@ export function SearchPage() {
           <div className="card-surface p-4 mt-3">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-semibold text-ink">{open}</span>
-              {(sel[open]?.length ?? 0) > 0 && <button onClick={() => setSel((p) => ({ ...p, [open]: [] }))} className="text-[12px] font-semibold text-gold">Wyczyść</button>}
+              <div className="flex items-center gap-3">
+                {(sel[open]?.length ?? 0) > 0 && <button onClick={() => setSel((p) => ({ ...p, [open]: [] }))} className="text-[12px] font-semibold text-gold">Wyczyść</button>}
+                <button onClick={() => { setOpen(null); setCatOpen(null); }} aria-label="Zwiń" className="w-7 h-7 -mr-1 rounded-pill flex items-center justify-center text-muted hover:bg-bg"><Icon name="x" size={16} /></button>
+              </div>
             </div>
             {open === 'Kategoria' ? (
               <div className="space-y-2">
