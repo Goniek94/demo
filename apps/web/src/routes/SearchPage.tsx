@@ -175,8 +175,9 @@ export function SearchPage() {
             return (
               <button
                 key={g.key}
-                onClick={() => { setOpen(isOpen ? null : g.key); setSortOpen(false); }}
-                className={`shrink-0 inline-flex items-center gap-1.5 rounded-pill px-3.5 py-2 text-[13px] font-medium border transition-colors ${n > 0 ? 'bg-gold-soft border-gold text-ink' : 'bg-surface border-line text-ink'}`}
+                type="button"
+                onClick={() => { setOpen((o) => (o === g.key ? null : g.key)); setCatOpen(null); setSortOpen(false); }}
+                className={`shrink-0 inline-flex items-center gap-1.5 rounded-pill px-3.5 py-2 text-[13px] font-medium border transition-colors touch-manipulation ${isOpen ? 'bg-ink border-ink text-white' : n > 0 ? 'bg-gold-soft border-gold text-ink' : 'bg-surface border-line text-ink'}`}
               >
                 {g.key}{n > 0 && ` · ${n}`} <Icon name="chevronDown" size={14} className={`text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </button>
