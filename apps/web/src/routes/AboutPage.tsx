@@ -24,7 +24,7 @@ const STEPS: { n: string; title: string; desc: string }[] = [
 export function AboutPage() {
   const router = useRouter();
   return (
-    <div className="w-full max-w-[1280px] mx-auto px-4 md:px-8 py-10 md:py-14">
+    <div className="w-full max-w-[1760px] mx-auto px-4 md:px-8 py-10 md:py-14">
       {/* hero — 2 kolumny, tekst po lewej */}
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14 md:mb-16">
         <div>
