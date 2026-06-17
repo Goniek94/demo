@@ -41,7 +41,7 @@ export function AboutPage() {
           </div>
         </div>
         <div className="rounded-2xl overflow-hidden aspect-[4/3] bg-gold-soft">
-          <img src="/hero1.png" alt="" className="w-full h-full object-cover" />
+          <img src="/hero4.png" alt="" className="w-full h-full object-cover" />
         </div>
       </div>
 
