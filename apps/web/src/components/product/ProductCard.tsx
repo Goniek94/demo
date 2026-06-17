@@ -29,30 +29,26 @@ export function ProductCard({ p }: { p: Listing }) {
   );
 }
 
-/** Karta produktu w stylu desktop (makiety web Home / „Polecane oferty").
- *  oldPrice (w groszach) opcjonalnie pokazuje rabat: przekreślona cena + „-X%". */
-export function ShopCard({ p, oldPrice }: { p: Listing; oldPrice?: number }) {
+/** Karta produktu (spójna z wersją mobilną): biały kafelek z cieniem,
+ *  plakietka stanu na zdjęciu, serce, wyśrodkowany serif tytuł → marka → cena. */
+export function ShopCard({ p }: { p: Listing }) {
   const [fav, setFav] = useState(false);
   const router = useRouter();
-  const pct = oldPrice && oldPrice > p.price ? Math.round((1 - p.price / oldPrice) * 100) : 0;
   return (
-    <div className="group cursor-pointer" onClick={() => router.push(`/produkt/${p.id}`)}>
-      <div className="relative aspect-[4/5] rounded-xl bg-gold-soft bg-cover bg-center overflow-hidden" style={{ backgroundImage: `url('${p.imageUrl}')` }}>
-        {pct > 0 && <span className="absolute top-3 left-3 text-[11px] font-bold text-white bg-danger px-2 py-1 rounded-pill">-{pct}%</span>}
+    <div onClick={() => router.push(`/produkt/${p.id}`)} className="card-surface overflow-hidden shadow-[0_6px_20px_rgba(40,30,20,0.05)] cursor-pointer transition hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(40,30,20,0.10)]">
+      <div className="relative aspect-[4/5] bg-gold-soft bg-cover bg-center" style={{ backgroundImage: `url('${p.imageUrl}')` }}>
+        <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold bg-white/90 text-ink px-2 py-1 rounded-pill shadow-sm">{conditionLabel(p.condition)}</span>
         <button
-          className="absolute top-3 right-3 w-9 h-9 rounded-pill bg-white/90 flex items-center justify-center shadow-sm"
+          className="absolute top-2.5 right-2.5 w-9 h-9 rounded-pill bg-white/95 flex items-center justify-center shadow-sm"
           onClick={(e) => { e.stopPropagation(); setFav(!fav); }}
         >
           <Icon name="heart" size={16} className={fav ? 'text-danger' : 'text-ink'} fill={fav ? 'currentColor' : 'none'} />
         </button>
       </div>
-      <div className="pt-3">
-        <div className="text-[14px] font-medium text-ink leading-snug line-clamp-1">{p.title}</div>
-        <div className="text-[12px] text-muted">{p.brand}</div>
-        <div className="flex items-baseline gap-2 mt-1">
-          <span className="font-semibold text-ink">{grosze(p.price)}</span>
-          {pct > 0 && <span className="text-[12px] text-muted line-through">{grosze(oldPrice!)}</span>}
-        </div>
+      <div className="p-3 text-center">
+        <div className="font-serif text-[15px] font-bold text-ink leading-tight truncate">{p.title}</div>
+        <div className="text-[12px] text-muted mt-0.5">{p.brand}</div>
+        <div className="font-serif text-[17px] font-bold text-ink mt-1.5">{grosze(p.price)}</div>
       </div>
     </div>
   );
