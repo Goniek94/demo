@@ -29,7 +29,7 @@ const STATS: { icon: IconName; value: string; label: string; sub: string }[] = [
 export function AboutPage() {
   const router = useRouter();
   return (
-    <div className="w-full max-w-[1760px] mx-auto px-4 md:px-8 py-10 md:py-14">
+    <div className="w-full max-w-[1180px] mx-auto px-4 md:px-8 py-10 md:py-14">
       {/* hero */}
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-16 md:mb-20">
         <div>
